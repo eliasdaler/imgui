@@ -7,8 +7,16 @@ project(imgui
 
 option(IMGUI_BACKEND_OPENGL2 "Build OpenGL 2 backend" ON)
 option(IMGUI_BACKEND_OPENGL3 "Build OpenGL 3 backend" ON)
+
 option(IMGUI_BACKEND_SDL "Build SDL backend" ON)
+if(MSVC)
+  set(IMGUI_SDL_PREBUILT_DIR "" CACHE PATH "Path containing prebuilt SDL")
+endif()
+
 option(IMGUI_BACKEND_GLFW "Build GLFW backend" ON)
+if(MSVC)
+  set(IMGUI_GLFW_PREBUILT_DIR "" CACHE PATH "Path containing prebuilt GLFW")
+endif()
 
 option(IMGUI_BUILD_EXAMPLES "Build examples" ON)
 

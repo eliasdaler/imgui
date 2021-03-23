@@ -39,6 +39,25 @@ if(IMGUI_BACKEND_SDL)
     # Nothing to do for emscripten builds. SDL is bunled with the compiler.
   elseif(TARGET SDL2::SDL2)
     # user has already added SDL2::SDL2 target by any means
+  elseif(MSVC AND IMGUI_SDL_PREBUILT_DIR)
+	# On Windows you may set IMGUI_SDL_PREBUILT_DIR variable and link to binary SDL distribution.
+	if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	  set(IMGUI_SDL_PLATFORM_ARCH x64)
+	elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+	  set(IMGUI_SDL_PLATFORM_ARCH x86)
+	else ()
+	  message(FATAL_ERROR "Unsupported platform.")
+	endif()
+
+	add_library(SDL2 SHARED IMPORTED GLOBAL)
+	target_include_directories(SDL2 INTERFACE "${IMGUI_SDL_PREBUILT_DIR}/include")
+	target_link_libraries(SDL2 INTERFACE "${IMGUI_SDL_PREBUILT_DIR}/lib/${IMGUI_SDL_PLATFORM_ARCH}/SDL2main.lib")
+	set_target_properties(SDL2 PROPERTIES
+	  IMPORTED_LOCATION "${IMGUI_SDL_PREBUILT_DIR}/lib/${IMGUI_SDL_PLATFORM_ARCH}/SDL2.dll"
+	  IMPORTED_IMPLIB "${IMGUI_SDL_PREBUILT_DIR}/lib/${IMGUI_SDL_PLATFORM_ARCH}/SDL2.lib"
+	)
+
+	add_library(SDL2::SDL2 ALIAS SDL2)
   elseif(SDL2_FOUND)
     # Platforms that do not export target but use old CMake conventions can be handled this way.
     add_library(SDL2::SDL2 INTERFACE IMPORTED)
@@ -71,21 +90,37 @@ endif()
 if(IMGUI_BACKEND_GLFW)
   # find glfw
   if(TARGET glfw)
-  # GLFW exists already. Nothing to do.
+    # GLFW exists already. Nothing to do.
   elseif(MSVC)
-    # We ship compiled libraries in our repository for Visual Studio.
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-      set(IMGUI_GLFW_PLATFORM_BITS 64)
-    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-      set(IMGUI_GLFW_PLATFORM_BITS 32)
-    else()
-      message(FATAL_ERROR "Unsupported platform.")
-    endif()
-    set(IMGUI_GLFW_SOURCE_DIR "${PROJECT_SOURCE_DIR}/examples/libs/glfw")
+    # On Windows you may set IMGUI_GLFW_PREBUILT_DIR variable and link to binary GLFW distribution.
+    if(IMGUI_GLFW_PREBUILT_DIR)
+	  set(IMGUI_GLFW_INCLUDE_DIR "${IMGUI_GLFW_PREBUILT_DIR}/include")
+	  set(IMGUI_GLFW_LIB_DIR "${IMGUI_GLFW_PREBUILT_DIR}/lib-vc2019") # TODO: don't hardcode VC version
 
-    add_library(glfw INTERFACE IMPORTED)
-    target_link_libraries(glfw INTERFACE "${IMGUI_GLFW_SOURCE_DIR}/lib-vc2010-${IMGUI_GLFW_PLATFORM_BITS}/glfw3.lib")
-    target_include_directories(glfw INTERFACE "${IMGUI_GLFW_SOURCE_DIR}/include")
+	  add_library(glfw SHARED IMPORTED GLOBAL)
+	  target_include_directories(glfw INTERFACE "${IMGUI_GLFW_INCLUDE_DIR}")
+	  set_target_properties(glfw PROPERTIES
+		IMPORTED_IMPLIB   "${IMGUI_GLFW_LIB_DIR}/glfw3.lib"
+	    IMPORTED_LOCATION "${IMGUI_GLFW_LIB_DIR}/glfw3.dll"
+	  )
+	else() # Use prebuilt GLFW from Dear ImGui's repo (only static build is included)
+      if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(IMGUI_GLFW_PLATFORM_BITS 64)
+      elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        set(IMGUI_GLFW_PLATFORM_BITS 32)
+      else()
+        message(FATAL_ERROR "Unsupported platform.")
+      endif()
+	  set(IMGUI_GLFW_DIR "${PROJECT_SOURCE_DIR}/examples/libs/glfw")
+	  set(IMGUI_GLFW_INCLUDE_DIR "${IMGUI_GLFW_DIR}/include")
+	  set(IMGUI_GLFW_LIB_DIR "${IMGUI_GLFW_DIR}/lib-vc2010-${IMGUI_GLFW_PLATFORM_BITS}")
+
+	  add_library(glfw STATIC IMPORTED GLOBAL)
+	  target_include_directories(glfw INTERFACE "${IMGUI_GLFW_INCLUDE_DIR}")
+	  set_target_properties(glfw PROPERTIES
+		IMPORTED_LOCATION "${IMGUI_GLFW_LIB_DIR}/glfw3.lib"
+	  )
+	endif()
   elseif(PkgConfig_FOUND)
     # CMake 3.6 supports IMPORTED_TARGET parameter which creates PkgConfig::glfw target that we can easily link to.
     # TODO: Switch to using IMPORTED_TARGET when CMake minimal version is increased.
