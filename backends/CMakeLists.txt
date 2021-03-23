@@ -51,13 +51,16 @@ if(IMGUI_BACKEND_SDL)
 
 	add_library(SDL2 SHARED IMPORTED GLOBAL)
 	target_include_directories(SDL2 INTERFACE "${IMGUI_SDL_PREBUILT_DIR}/include")
-	target_link_libraries(SDL2 INTERFACE "${IMGUI_SDL_PREBUILT_DIR}/lib/${IMGUI_SDL_PLATFORM_ARCH}/SDL2main.lib")
 	set_target_properties(SDL2 PROPERTIES
 	  IMPORTED_LOCATION "${IMGUI_SDL_PREBUILT_DIR}/lib/${IMGUI_SDL_PLATFORM_ARCH}/SDL2.dll"
 	  IMPORTED_IMPLIB "${IMGUI_SDL_PREBUILT_DIR}/lib/${IMGUI_SDL_PLATFORM_ARCH}/SDL2.lib"
 	)
-
 	add_library(SDL2::SDL2 ALIAS SDL2)
+
+	add_library(SDL2main STATIC IMPORTED GLOBAL)
+	set_target_properties(SDL2main PROPERTIES
+	  IMPORTED_LOCATION "${IMGUI_SDL_PREBUILT_DIR}/lib/${IMGUI_SDL_PLATFORM_ARCH}/SDL2main.lib"
+	)
   elseif(SDL2_FOUND)
     # Platforms that do not export target but use old CMake conventions can be handled this way.
     add_library(SDL2::SDL2 INTERFACE IMPORTED)
